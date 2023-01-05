@@ -52,7 +52,7 @@ type INode interface {
 	OnTick(*Tick) Status // 主要业务逻辑
 	OnLeave(*Tick)       // 离开
 
-	execute(*Tick) Status // 节点控制逻辑
+	Execute(*Tick) Status // 节点控制逻辑 一般不用重写
 
 	getCfg() *Node
 	init(node *Node, worker INode)
@@ -85,7 +85,7 @@ func (node *baseNode) OnLeave(*Tick) {
 
 }
 
-func (node *baseNode) execute(tick *Tick) Status {
+func (node *baseNode) Execute(tick *Tick) Status {
 	nodesData := tick.GetOpenNodes()
 
 	status, ok := nodesData[node.Id]
@@ -127,7 +127,7 @@ func (node *SubTree) OnTick(tick *Tick) Status {
 		return SUCCESS
 	}
 
-	return tree.(*Tree).root.execute(tick)
+	return tree.(*Tree).root.Execute(tick)
 }
 
 // 节点名对应的实现

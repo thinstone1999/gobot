@@ -19,15 +19,38 @@ func (br *branch) AddLeaf(node INode) {
 	br.leafs = append(br.leafs, node)
 }
 
+// 可包含多个子节点
+type Composite struct {
+	branch
+}
+
+func (node *Composite) GetChild(i int) INode {
+	return node.branch.leafs[i]
+}
+
+func (node *Composite) Len() int {
+	return len(node.branch.leafs)
+}
+
+// 只能包含一个子节点
+type Decorator struct {
+	branch
+}
+
+func (node *Decorator) GetChild() INode {
+	return node.branch.leafs[0]
+}
+
 // 逻辑或
 type Priority struct {
-	branch
+	Composite
 }
 
 // 叶子节点成功一个就返回
 func (br *Priority) OnTick(tick *Tick) Status {
-	for _, leaf := range br.leafs {
-		status := leaf.execute(tick)
+	for i := 0; i < br.Len(); i++ {
+		child := br.GetChild(i)
+		status := child.Execute(tick)
 		if status == SUCCESS {
 			return SUCCESS
 		}
@@ -36,7 +59,7 @@ func (br *Priority) OnTick(tick *Tick) Status {
 }
 
 type MemPriority struct {
-	branch
+	Composite
 }
 
 func (br *MemPriority) OnEnter(tick *Tick) {
@@ -46,8 +69,8 @@ func (br *MemPriority) OnEnter(tick *Tick) {
 // 叶子节点成功一个就返回
 func (br *MemPriority) OnTick(tick *Tick) Status {
 	indexMap := tick.GetIndexMap()
-	for i := indexMap[br.Id]; i < len(br.leafs); i++ {
-		status := br.leafs[i].execute(tick)
+	for i := indexMap[br.Id]; i < br.Len(); i++ {
+		status := br.GetChild(i).Execute(tick)
 		if status == SUCCESS {
 			return status
 		}
@@ -62,14 +85,15 @@ func (br *MemPriority) OnTick(tick *Tick) Status {
 
 // 逻辑与
 type Sequence struct {
-	branch
+	Composite
 }
 
 // 叶子节点失败一个就返回
 func (br *Sequence) OnTick(tick *Tick) Status {
-	for _, leaf := range br.leafs {
-		status := leaf.execute(tick)
-		if status != SUCCESS {
+	for i := 0; i < br.Len(); i++ {
+		child := br.GetChild(i)
+		status := child.Execute(tick)
+		if status == ERROR {
 			return ERROR
 		}
 	}
@@ -77,7 +101,7 @@ func (br *Sequence) OnTick(tick *Tick) Status {
 }
 
 type MemSequence struct {
-	branch
+	Composite
 }
 
 func (br *MemSequence) OnEnter(tick *Tick) {
@@ -87,8 +111,8 @@ func (br *MemSequence) OnEnter(tick *Tick) {
 // 叶子节点失败一个就返回
 func (br *MemSequence) OnTick(tick *Tick) Status {
 	indexMap := tick.GetIndexMap()
-	for i := indexMap[br.Id]; i < len(br.leafs); i++ {
-		status := br.leafs[i].execute(tick)
+	for i := indexMap[br.Id]; i < br.Len(); i++ {
+		status := br.GetChild(i).Execute(tick)
 		if status == ERROR {
 			return status
 		}
@@ -103,28 +127,28 @@ func (br *MemSequence) OnTick(tick *Tick) Status {
 
 // 随机节点
 type Rand struct {
-	branch
+	Composite
 }
 
 // 随机执行一个叶子节点
 func (br *Rand) OnTick(tick *Tick) Status {
-	n := len(br.leafs)
+	n := br.Len()
 	if n == 0 {
 		return SUCCESS
 	}
 
 	idx := rand.Intn(n)
-	return br.leafs[idx].execute(tick)
+	return br.GetChild(idx).Execute(tick)
 }
 
 // 执行顺序打乱，但每个节点都有机会执行一次
 type MemRand struct {
-	branch
+	Composite
 }
 
 // 随机执行一个叶子节点
 func (br *MemRand) OnTick(tick *Tick) Status {
-	n := len(br.leafs)
+	n := br.Len()
 	if n == 0 {
 		return SUCCESS
 	}
@@ -135,7 +159,7 @@ func (br *MemRand) OnTick(tick *Tick) Status {
 		toTick = map[int]struct{}{}
 		rand[br.Id] = toTick
 
-		for i := range br.leafs {
+		for i := 0; i < n; i++ {
 			toTick[i] = struct{}{}
 		}
 	}
@@ -146,7 +170,7 @@ func (br *MemRand) OnTick(tick *Tick) Status {
 		break
 	}
 
-	return br.leafs[idx].execute(tick)
+	return br.GetChild(idx).Execute(tick)
 }
 
 func init() {

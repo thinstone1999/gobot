@@ -15,6 +15,7 @@
 !*.sh
 !*.md
 !*.bat
+!*.png
 ![Mm]akefile
 ![Dd]ockerfile
 .vscode

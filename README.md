@@ -116,3 +116,147 @@ type IApp interface {
 }
 ```
 
+### 行为树
+
+配置文件在conf/robot.b3
+
+开源behavior3go已经实现节点And、Or等基础控制逻辑 `https://github.com/magicsea/behavior3go`
+
+可以自行扩展其他控制逻辑，比如随机执行等
+
+#### 节点说明
+
+##### 节点状态：
+
+控制节点会根据状态做出决策
+
+- Success
+
+  成功
+
+- ERROR
+
+  失败
+
+- Running
+
+  表示节点会持续运行一定时间
+
+##### 默认控制节点说明：
+
+- Sequence
+
+  相当于逻辑与操作
+
+  下面的例子默认顺序执行A、B、C
+
+   如果A返回失败，则不会继续执行B、C
+
+  ![image-20220622181938442](img/sequence.png)
+
+- Priority
+
+  相当于逻辑或
+
+  如果A返回成功，则不会执行B、C
+
+  ![image-20220622182212111](img/priority.png)
+
+- MemSequence/MemPriority
+
+  带Mem前缀的会记住返回running的节点，下次直接运行这个节点
+
+  比如第一次遍历时C返回running
+
+  则第二次遍历时会跳过运行A、B直接运行C
+
+  ![image-20220622181938442](img/memsequnce.png)
+
+- 随机节点 Rand/MemRand
+
+  - Rand类型 
+
+    每次抽取均独立 即每次抽到A、B、C的概率相同
+
+  - MemRand类型
+
+    不放回抽取 第一次抽到了B 则第二次只能从A、C中选 假如是C 则第三次只能选择A
+
+    抽完一轮则重置为初始状态
+
+  
+
+![image-20230104174035144](img/rand.png)
+
+##### 自定义节点
+
+编辑器中点击新建节点
+
+![image-20230105094811094](img/newnode.png)
+
+Name相当于面向对象语言中的类型名，Title相当于实例名称，不同实例可同名
+
+节点类别有分支节点和叶子节点两种类型
+
+###### 分支节点
+
+- Composite 组合节点
+
+  可以包含多个节点
+
+  自定义时内嵌btree.Composite结构体
+
+  通关Len方法获取子节点数量，GetChild方法拿到子节点
+
+- Decorator 装饰节点
+
+  只包含一个节点
+
+  自定义时内嵌btree.Decorator结构体
+
+  通过GetChild方法拿到子节点
+
+###### 叶子节点
+
+承载业务逻辑的实现
+
+自定义节点时内嵌btree.Action
+
+实现时按需重写Inode接口中的方法即可，一般只需重写OnTick
+
+```go
+type INode interface {
+	OnEnter(*Tick)       // 进入节点
+	OnTick(*Tick) Status // 主要业务逻辑
+	OnLeave(*Tick)       // 离开节点
+	Execute(*Tick) Status // 节点控制逻辑 一般不用重写
+}
+```
+
+
+
+##### 一个例子
+
+实现自定义节点的步骤其实就是
+
+- 先在编辑器中新建一个节点 假如Log节点
+- 在画布中编排好节点保存配置
+- 然后定义Log结构体，并内嵌对应的类型 比如btree.Action
+- 再重写OnTick接口 实现自己的业务逻辑
+- btree.Register注册结构体即可
+
+```go
+type Log struct {
+	btree.Action
+}
+
+func (node *Log) OnTick(tick *btree.Tick) btree.Status {
+	// node.Properties.Get() 获取属性
+	fmt.Println("runNode", node.Id, node.Name, node.Title)
+	return btree.SUCCESS
+}
+
+//注册节点
+btree.Register(&Log{})
+```
+

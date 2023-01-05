@@ -123,7 +123,7 @@ func (tree *Tree) Tick(userdata interface{}, store util.Map) bool {
 	lastRunning := tick.GetRunningNodes()
 	tick.Reset()
 
-	tree.root.execute(tick)
+	tree.root.Execute(tick)
 
 	running := tick.GetRunningNodes()
 	for node := range lastRunning {
