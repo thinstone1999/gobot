@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 )
 
 // 热更配置
@@ -16,6 +17,12 @@ func (app *App) JsReloadConfig() (ret interface{}, err error) {
 
 // 读文件
 func (app *App) JsReadFile(fname string) (ret interface{}, err error) {
+	_, err = os.Stat(fname)
+	if err != nil {
+		dir, _ := filepath.Split(fname)
+		os.MkdirAll(dir, os.ModeDir)
+		os.Create(fname)
+	}
 	var buf []byte
 	buf, err = ioutil.ReadFile(fname)
 	ret = string(buf)
