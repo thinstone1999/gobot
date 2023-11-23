@@ -9,12 +9,14 @@ import (
 
 type RateLimiter struct {
 	tokens sync.Map
-	conf   map[string]int32 // 限制配置
+	conf   map[string]int32 // 协议名:每秒发送限制数量
 }
 
 // 设置上限
 func SetLimit(conf map[string]int32) {
 	limiter.conf = conf
+	limiter.tokens = sync.Map{}
+	limiter.Fill()
 }
 
 // 消费token

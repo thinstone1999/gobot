@@ -1,0 +1,11 @@
+{
+    "common": {
+        "心跳": {
+            "id": "心跳",
+            "req": "HeartBeatC2S",
+            "params": {
+                "PingTimestamp": 0
+            }
+        }
+    }
+}

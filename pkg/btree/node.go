@@ -52,7 +52,7 @@ type INode interface {
 	OnTick(*Tick) Status // 主要业务逻辑
 	OnLeave(*Tick)       // 离开
 
-	Execute(*Tick) Status // 节点控制逻辑 一般不用重写
+	execute(*Tick) Status // 节点控制逻辑
 
 	getCfg() *Node
 	init(node *Node, worker INode)
@@ -85,7 +85,7 @@ func (node *baseNode) OnLeave(*Tick) {
 
 }
 
-func (node *baseNode) Execute(tick *Tick) Status {
+func (node *baseNode) execute(tick *Tick) Status {
 	nodesData := tick.GetOpenNodes()
 
 	status, ok := nodesData[node.Id]
@@ -127,7 +127,7 @@ func (node *SubTree) OnTick(tick *Tick) Status {
 		return SUCCESS
 	}
 
-	return tree.(*Tree).root.Execute(tick)
+	return tree.(*Tree).root.execute(tick)
 }
 
 // 节点名对应的实现
@@ -144,9 +144,19 @@ func Register(node INode) {
 // 根据配置 构建实际节点
 func FactoryNode(node *Node) INode {
 	if node.Category == TREE {
-		v, _ := mgr.trees.Load(node.Name)
-		treeCfg := v.(*Tree)
-		node.Properties = treeCfg.Properties
+		func() {
+			defer func() {
+				r := recover()
+				if r != nil {
+					fmt.Println(node.Name)
+					panic(r)
+				}
+			}()
+			v, _ := mgr.trees.Load(node.Name)
+			treeCfg := v.(*Tree)
+			node.Properties = treeCfg.Properties
+		}()
+
 		return &SubTree{
 			baseNode: baseNode{Node: *node},
 		}

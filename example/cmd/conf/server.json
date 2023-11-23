@@ -1,0 +1,17 @@
+{
+    "local": {
+        "url": "http://127.0.0.1:5000/authtoken",
+        "account": "cc38",
+        "zone": 2,
+        "device_id": "linux2",
+        "client_version": "0.0.0.0.0.0"
+    },
+    "temp": {
+        "url": "http://127.0.0.1:5000/authtoken",
+        "account": "cd36",
+        "zone": 1,
+        "name": "cd36",
+        "device_id": "linux2",
+        "client_version": "0.0.0.0.0.0"
+    }
+}

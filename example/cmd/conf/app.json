@@ -1,0 +1,17 @@
+{
+    "log_level": "debug",
+    "log_path": "./log",
+    "tick_pace": 1000,
+    "login_conf": {
+        "url": "http://localhost:5000/authtoken"
+    },
+    "sdk_conf": {
+        "name": "",
+        "app_id": "8",
+        "app_key": "490bc3e88cc048ac9f55f9ae9222a244",
+        "secret": 2,
+        "channel_id": "0",
+        "url": "https://ugserver.lmdgame.tw/account/app/defaultLogin",
+        "account_prefix": "cd"
+    }
+}

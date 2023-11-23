@@ -3,6 +3,7 @@ package btree
 import (
 	"encoding/json"
 	"io/ioutil"
+	"sort"
 	"strings"
 	"sync"
 
@@ -33,7 +34,8 @@ func (mgr *TreeManager) GetByTitle(title string) *Tree {
 	var tr *Tree
 	mgr.titles.Range(func(key, value interface{}) bool {
 		tree := value.(*Tree)
-		if strings.Contains(tree.Title, title) {
+		id := strings.Split(tree.Title, " ")[0]
+		if id == title {
 			tr = tree
 			return false
 		}
@@ -48,9 +50,14 @@ func (mgr *TreeManager) LoadProject(path string) error {
 		return err
 	}
 
+	sort.Slice(pj.Data.Trees, func(i, j int) bool {
+		return pj.Data.Trees[i].Title < pj.Data.Trees[j].Title
+	})
+
 	for _, tree := range pj.Data.Trees {
 		tree.buildRoot()
 		mgr.trees.Store(tree.ID, tree)
+		// fmt.Println("buildTree", tree.Title)
 		mgr.titles.Store(tree.Title, tree)
 	}
 
@@ -123,7 +130,7 @@ func (tree *Tree) Tick(userdata interface{}, store util.Map) bool {
 	lastRunning := tick.GetRunningNodes()
 	tick.Reset()
 
-	tree.root.Execute(tick)
+	tree.root.execute(tick)
 
 	running := tick.GetRunningNodes()
 	for node := range lastRunning {

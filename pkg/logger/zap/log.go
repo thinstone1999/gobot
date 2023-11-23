@@ -41,6 +41,10 @@ func (l *Logger) Error(msg string, keysAndValues ...interface{}) {
 	l.sugar.Errorw(msg, keysAndValues...)
 }
 
+func (l *Logger) GetSugar() *zap.SugaredLogger {
+	return l.sugar
+}
+
 func (l *Logger) init() {
 	core := l.getCore()
 	l.sugar = zap.New(core,

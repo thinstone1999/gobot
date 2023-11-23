@@ -1,0 +1,8 @@
+{
+    "lastServer": "QA服",
+    "logFilter": {
+        "GamerHeartS2C": true,
+        "GamerHeartC2S": true
+    },
+    "reqClass": "节日活动"
+}

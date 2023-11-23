@@ -2,9 +2,13 @@ package gobot
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"sync/atomic"
+
+	"github.com/Gonewithmyself/gobot/pkg/btree"
 )
 
 // 热更配置
@@ -75,12 +79,16 @@ func (app *App) JsStartRobot(treeID string, tab float64, confJs string) (ret int
 
 	go ins.RunGamer(gamer, app.Trees.Get(treeID))
 	app.Gamers[uid] = gamer
-
 	return
 }
 
+type stressWeight struct {
+	Id     string `json:"id,omitempty"`
+	Weight int32  `json:"weight,omitempty"`
+}
+
 // 运行压测
-func (app *App) JsStressRobot(confJs, stressJS string) (ret interface{}, err error) {
+func (app *App) JsStressRobot(confJs, stressJS, weightJS, appJs string) (ret interface{}, err error) {
 	var stressInfo struct {
 		TreeID string `json:"tree_id,omitempty"`
 		Start  int32  `json:"start,omitempty"`
@@ -90,18 +98,52 @@ func (app *App) JsStressRobot(confJs, stressJS string) (ret interface{}, err err
 	if err != nil {
 		return
 	}
+
+	err = app.ResetWeight(weightJS)
+	if err != nil {
+		return
+	}
+
+	if !atomic.CompareAndSwapInt32(&app.State, 0, 1) {
+		err = fmt.Errorf("already Start")
+		return
+	}
 	app.Mode = StressMode
 	app.UI.SetSilent(true)
 
+	app.ins.ResetConfig(appJs)
 	app.ins.StressStart(stressInfo.Start, stressInfo.Count, stressInfo.TreeID, confJs)
 	return
 }
 
+func (app *App) ResetWeight(js string) error {
+	var weights []stressWeight
+	err := json.Unmarshal([]byte(js), &weights)
+	for _, wt := range weights {
+		tr := app.Trees.Get(wt.Id)
+		if tr == nil {
+			continue
+		}
+		tr.Properties.Set("weight", wt.Weight)
+	}
+	return err
+}
+
 // 停止运行
 func (app *App) JsStop() (ret interface{}, err error) {
+	trees := btree.NewTreeMgr()
+	if er := trees.LoadProject(app.Options.TreeFile); er == nil {
+		app.Trees = trees
+	}
+
 	for _, gamer := range app.Gamers {
-		gamer.Close()
+		if app.Mode == StressMode {
+			gamer.Stop()
+		} else {
+			gamer.Close()
+		}
 		delete(app.Gamers, gamer.GetUid())
 	}
+	app.ins.OnClickStop()
 	return
 }

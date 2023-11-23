@@ -11,7 +11,7 @@ type UI struct {
 
 func NewUI(height, width int) *UI {
 	args := make([]string, 0, 4)
-	// args = append(args, "--test-type")
+	args = append(args, "--remote-allow-origins=*")
 	args = append(args, "--no-sandbox")
 	gui, er := lorca.New("", "", width, height, args...)
 	if er != nil {
@@ -33,4 +33,8 @@ func (app *UI) Done() <-chan struct{} {
 
 func (app *UI) SetSilent(s bool) {
 	app.silent = s
+}
+
+func (app *UI) GetSilent() bool {
+	return app.silent
 }

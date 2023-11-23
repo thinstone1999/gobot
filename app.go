@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"os"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/Gonewithmyself/gobot/back"
@@ -24,6 +25,9 @@ type IApp interface {
 	// 根据配置文件创建一个玩家
 	CreateGamer(confJson string, seq int32) (back.IGamer, error)
 	RunGamer(g back.IGamer, tree *btree.Tree)
+
+	ResetConfig(js string) // 前端传入部分配置
+	OnClickStop()
 
 	StressStart(start, count int32, treeID, confJs string) // 压测开始
 	PrintStressStatus()                                    // 打印压测状态
@@ -57,6 +61,7 @@ type BaseApp struct {
 	Gamers map[string]back.IGamer
 	Mode   RunMode
 	Os     RunOs // 运行环境 linux/windows
+	State  int32
 
 	ins IApp // 实例
 }
@@ -73,12 +78,22 @@ func (app *BaseApp) PrintStressStatus() {
 
 }
 
+func (app *BaseApp) ResetConfig(js string) {
+
+}
+
+func (app *BaseApp) OnClickStop() {
+	atomic.CompareAndSwapInt32(&app.State, 1, 0)
+}
+
 // 压测开始
 func (app *BaseApp) StressStart(start, count int32, treeID, confJs string) {
 	tree := app.Trees.Get(treeID)
 	if tree == nil {
 		tree = app.Trees.GetByTitle(treeID)
 	}
+
+	logger.Info("StressStart", "tree", tree.Title, "start", start, "count", count, "conf", confJs)
 
 	for i := int32(0); i < count; i++ {
 		gamer, err := app.ins.CreateGamer(confJs, start+i)
@@ -202,7 +217,7 @@ func (app *BaseApp) CreateGamer(confJson string, seq int32) (back.IGamer, error)
 
 func (app *BaseApp) RunGamer(gamer back.IGamer, tree *btree.Tree) {
 	var reason string
-	ticker := time.NewTicker(time.Millisecond * time.Duration(gamer.GetTickMs()))
+	timer := time.NewTimer(time.Millisecond * time.Duration(gamer.GetTickMs()))
 	store := util.NewMap()
 	defer func() {
 		logger.Info("gamer exit", "uid", gamer.GetUid(), "reason", reason)
@@ -215,7 +230,7 @@ func (app *BaseApp) RunGamer(gamer back.IGamer, tree *btree.Tree) {
 
 	for {
 		select {
-		case <-ticker.C:
+		case <-timer.C:
 			if gamer.IsStopped() {
 				// 停止后只收消息不发消息
 				// 避免只统计到消息发送，服务还没回包就停了
@@ -225,6 +240,7 @@ func (app *BaseApp) RunGamer(gamer back.IGamer, tree *btree.Tree) {
 			if !tree.Tick(gamer, store) {
 				logger.Warn("treeDisabled", tree.Title)
 			}
+			timer.Reset(time.Millisecond * time.Duration(gamer.GetTickMs()))
 
 		case msg := <-gamer.MsgChan():
 			gamer.ProcessMsg(msg)
