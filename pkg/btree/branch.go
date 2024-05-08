@@ -42,7 +42,7 @@ type MemPriority struct {
 	branch
 }
 
-func (br *MemPriority) OnEnter(tick *Tick) {
+func (br *MemPriority) OnLeave(tick *Tick) {
 	tick.GetIndexMap()[br.Id] = 0
 }
 
@@ -83,7 +83,7 @@ type MemSequence struct {
 	branch
 }
 
-func (br *MemSequence) OnEnter(tick *Tick) {
+func (br *MemSequence) OnLeave(tick *Tick) {
 	tick.GetIndexMap()[br.Id] = 0
 }
 

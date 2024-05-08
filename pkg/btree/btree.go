@@ -55,10 +55,12 @@ func (mgr *TreeManager) LoadProject(path string) error {
 	})
 
 	for _, tree := range pj.Data.Trees {
-		tree.buildRoot()
 		mgr.trees.Store(tree.ID, tree)
-		// fmt.Println("buildTree", tree.Title)
 		mgr.titles.Store(tree.Title, tree)
+	}
+
+	for _, tree := range pj.Data.Trees {
+		tree.buildRoot()
 	}
 
 	return nil
