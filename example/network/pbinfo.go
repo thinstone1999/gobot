@@ -7,8 +7,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/Gonewithmyself/gobot/pkg/util"
-
 	"github.com/golang/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
@@ -22,7 +20,7 @@ type NbaPb struct {
 	CsType2Cmd map[reflect.Type]uint16
 	CsCmd2Type map[uint16]reflect.Type
 	ScCmd2Type map[uint16]reflect.Type
-	Special    map[string]*util.SpecialInfo
+	//Special    map[string]*util.SpecialInfo
 }
 
 func CmdAct(cmd, act uint8) int {
@@ -57,21 +55,21 @@ func GetCmdActByProto(protoType reflect.Type) uint16 {
 }
 
 func (info *NbaPb) ProcessOneMsg(name string, tp reflect.Type) {
-	dft := util.JsonDefault(tp)
-	info.Special[name] = dft
+	// dft := util.JsonDefault(tp)
+	// info.Special[name] = dft
 
-	if strings.Contains(name, "C2S") {
-		cmdAct := GetCmdActByProto(tp)
-		info.CsCmd2Type[cmdAct] = tp
-		info.CsType2Cmd[tp] = cmdAct
-		info.CsMap[name] = dft.DefaultData
-		info.CsList = append(info.CsList, name)
-	}
+	// if strings.Contains(name, "C2S") {
+	// 	cmdAct := GetCmdActByProto(tp)
+	// 	info.CsCmd2Type[cmdAct] = tp
+	// 	info.CsType2Cmd[tp] = cmdAct
+	// 	info.CsMap[name] = dft.DefaultData
+	// 	info.CsList = append(info.CsList, name)
+	// }
 
-	if strings.Contains(name, "S2C") {
-		cmdAct := GetCmdActByProto(tp)
-		info.ScCmd2Type[cmdAct] = tp
-	}
+	// if strings.Contains(name, "S2C") {
+	// 	cmdAct := GetCmdActByProto(tp)
+	// 	info.ScCmd2Type[cmdAct] = tp
+	// }
 }
 
 func (info *NbaPb) ListMsg() []string {
@@ -87,7 +85,7 @@ func (info *NbaPb) Init() {
 	info.CsCmd2Type = make(map[uint16]reflect.Type)
 	info.CsType2Cmd = make(map[reflect.Type]uint16)
 	info.ScCmd2Type = make(map[uint16]reflect.Type)
-	info.Special = make(map[string]*util.SpecialInfo)
+	//info.Special = make(map[string]*util.SpecialInfo)
 }
 
 func (info *NbaPb) DecodeScMsg(cmd uint16, data []byte) (proto.Message, error) {
@@ -131,15 +129,15 @@ func (info *NbaPb) GetCsMsgByJSON(name string, js string) proto.Message {
 
 	msg := reflect.New(tp).Interface()
 
-	sp := info.Special[name]
-	if !sp.HasSpecial {
-		json.Unmarshal([]byte(js), msg)
-		return msg.(proto.Message)
-	}
+	// sp := info.Special[name]
+	// if !sp.HasSpecial {
+	// 	json.Unmarshal([]byte(js), msg)
+	// 	return msg.(proto.Message)
+	// }
 
 	var tmp map[string]interface{}
 	json.Unmarshal([]byte(js), &tmp)
-	util.DecodeJSONmap(tmp, sp.SpecialData)
+	//util.DecodeJSONmap(tmp, sp.SpecialData)
 	data, _ := json.Marshal(tmp)
 	json.Unmarshal(data, msg)
 	return msg.(proto.Message)

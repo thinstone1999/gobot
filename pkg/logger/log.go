@@ -42,6 +42,10 @@ func Printf(msg string, args ...interface{}) {
 	lg.Debug(msg)
 }
 
+func SetLogger(l Logger) {
+	lg = l
+}
+
 func Init(lv zapcore.Level, path string, name string) {
 	lg = zap.NewLogger(
 		zap.WithLevel(lv),
